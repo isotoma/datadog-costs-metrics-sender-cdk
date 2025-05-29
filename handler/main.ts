@@ -1,5 +1,4 @@
 import * as secretsmanager from '@aws-sdk/client-secrets-manager';
-import { fromIni } from '@aws-sdk/credential-providers';
 import * as datadog from '@datadog/datadog-api-client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,9 +56,7 @@ const getValueFromJsonAtPath = (json: string, path: string | undefined): string 
 };
 
 const getSecretValue = async (secretArn: string, secretPath: string | undefined): Promise<string> => {
-    const client = new secretsmanager.SecretsManagerClient({
-        credentials: fromIni(),
-    });
+    const client = new secretsmanager.SecretsManagerClient();
 
     const command = new secretsmanager.GetSecretValueCommand({
         SecretId: secretArn,
