@@ -13,6 +13,16 @@ export interface DatadogCostsMetricsSenderProps {
      * used for sending metrics.
      */
     apiKeySecret: secretmanager.ISecret;
+
+    apiKeySecretPath?: Array<string>;
+
+    /**
+     * The Secrets Manager secret storing the Datadog APP key to be
+     * used for sending metrics.
+     */
+    appKeySecret: secretmanager.ISecret;
+
+    appKeySecretPath?: Array<string>;
     /**
      * The schedule for the Lambda function to run. If not provided, it will run nightly.
      */
@@ -45,6 +55,17 @@ export class DatadogCostsMetricsSender extends Construct {
             memorySize: 128,
             environment: {
                 DATADOG_API_KEY_SECRET_ARN: props.apiKeySecret.secretArn,
+                ...(props.apiKeySecretPath
+                    ? {
+                          DATADOG_API_KEY_SECRET_PATH: props.apiKeySecretPath.join('.'),
+                      }
+                    : {}),
+                DATADOG_APP_KEY_SECRET_ARN: props.appKeySecret.secretArn,
+                ...(props.appKeySecretPath
+                    ? {
+                          DATADOG_APP_KEY_SECRET_PATH: props.appKeySecretPath.join('.'),
+                      }
+                    : {}),
                 DATADOG_SITE: props.datadogSite ?? 'datadoghq.com',
                 ESTIMATED_COSTS_METRIC_NAME: props.metricNames?.estimatedCosts ?? 'datadog_costs.estimated',
                 PROJECTED_COSTS_METRIC_NAME: props.metricNames?.projectedCosts ?? 'datadog_costs.projected',
@@ -52,6 +73,7 @@ export class DatadogCostsMetricsSender extends Construct {
         });
 
         props.apiKeySecret.grantRead(handler);
+        props.appKeySecret.grantRead(handler);
 
         new events.Rule(this, 'ScheduleRule', {
             description: 'Event rule to run datadog-costs-metrics-sender on a schedule',

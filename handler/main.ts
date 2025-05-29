@@ -32,7 +32,11 @@ const getEnvVarOrUndefined = (name: string): string | undefined => {
     return value;
 };
 
-const getValueFromJsonAtPath = (json: string, path: string): string => {
+const getValueFromJsonAtPath = (json: string, path: string | undefined): string => {
+    if (typeof path === 'undefined') {
+        return json.trim();
+    }
+
     const parsedJson = JSON.parse(json);
     const keys = path.split('.');
 
