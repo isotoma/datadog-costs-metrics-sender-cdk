@@ -113,24 +113,25 @@ const validateApiKey = async (datadogConfiguration: datadog.client.Configuration
     }
 };
 
+const toNaiveDate = (date: Date): Date => {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
+};
+
 const startOfMonth = (date: Date): Date => {
-    const start = new Date(date.getFullYear(), date.getMonth(), 1);
-    start.setHours(0, 0, 0, 0);
-    return start;
+    const newDate = toNaiveDate(date);
+    newDate.setUTCDate(1);
+    return newDate;
 };
 
 const startOfNextMonth = (date: Date): Date => {
-    const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-    nextMonth.setHours(0, 0, 0, 0);
-    return nextMonth;
+    const newDate = toNaiveDate(date);
+    newDate.setUTCMonth(newDate.getUTCMonth() + 1);
+    newDate.setUTCDate(1);
+    return newDate;
 };
 
 const getEstimatedCosts = async (datadogConfiguration: datadog.client.Configuration, date: Date) => {
     const apiInstance = new datadog.v2.UsageMeteringApi(datadogConfiguration);
-
-    // const startDateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    // Next month
-    // const endDateString = `${date.getFullYear()}-${String(date.getMonth() + 2).padStart(2, '0')}`;
 
     const params = {
         startMonth: startOfMonth(date),
