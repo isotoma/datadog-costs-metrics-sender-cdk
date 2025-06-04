@@ -90,7 +90,7 @@ const getDatadogApiConfiguration = (apiKey: string, appKey: string, site: string
         },
     });
     configuration.setServerVariables({
-        site: 'datadoghq.eu',
+        site,
     });
     return configuration;
 };
