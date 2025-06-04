@@ -1,6 +1,6 @@
 {
     "name": "datadog-costs-metrics-sender-cdk",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "",
     "license": "MIT",
     "author": {
