@@ -130,7 +130,7 @@ const startOfNextMonth = (date: Date): Date => {
     return newDate;
 };
 
-const getEstimatedCosts = async (datadogConfiguration: datadog.client.Configuration, date: Date) => {
+const getEstimatedCosts = async (datadogConfiguration: datadog.client.Configuration, date: Date): number | undefined => {
     const apiInstance = new datadog.v2.UsageMeteringApi(datadogConfiguration);
 
     const params = {
@@ -138,10 +138,11 @@ const getEstimatedCosts = async (datadogConfiguration: datadog.client.Configurat
         endMonth: startOfNextMonth(date),
     };
 
+    logger('Retrieving estimated costs', { params });
+
     try {
         const response = await apiInstance.getEstimatedCostByOrg(params);
-        logger('Estimated costs retrieved', { response });
-        const totalCost = response.data[0].attributes.totalCost;
+        const totalCost = response.data?.[0]?.attributes?.totalCost;
         return totalCost;
     } catch (error) {
         logger('Error retrieving estimated costs', { error });
@@ -155,48 +156,48 @@ interface DatadogMetric {
 }
 
 const sendMetricsToDatadog = async (datadogConfiguration: datadog.client.Configuration, date: Date, metrics: DatadogMetric[]) => {
+    if (metrics.length === 0) {
+        logger('No metrics to send to Datadog');
+        return;
+    }
+
     const apiInstance = new datadog.v2.MetricsApi(datadogConfiguration);
     const params: datadog.v2.MetricsApiSubmitMetricsRequest = {
         body: {
-            series: metrics.map((metric) => {
-                console.log(JSON.stringify(metric));
-                console.log(typeof metric.metricName);
-                console.log(typeof metric.value);
-
-                return {
-                    metric: metric.metricName,
-                    type: 0,
-                    points: [
-                        {
-                            timestamp: Math.round(date.getTime() / 1000),
-                            value: metric.value,
-                        },
-                    ],
-                    unit: 'dollar',
-                };
-            }),
+            series: metrics.map((metric) => ({
+                metric: metric.metricName,
+                type: 0,
+                points: [
+                    {
+                        timestamp: Math.round(date.getTime() / 1000),
+                        value: metric.value,
+                    },
+                ],
+                unit: 'dollar',
+            })),
         },
     };
 
     logger('Sending metrics to Datadog', { params });
 
-    // try {
-    const response = await apiInstance.submitMetrics(params);
-    logger('Metrics sent to Datadog', { response });
-    return response;
-    // } catch (error) {
-    //     logger('Error sending metrics to Datadog', { error });
-    //     throw new Error(`Failed to send metrics to Datadog: ${error}`);
-    // }
+    try {
+        const response = await apiInstance.submitMetrics(params);
+        if (response.errors && response.errors.length > 0) {
+            logger('Errors sending metrics to Datadog', { errors: response.errors });
+            throw new Error(`Errors sending metrics to Datadog: ${response.errors}`);
+        }
+    } catch (error) {
+        logger('Error sending metrics to Datadog', { error });
+        throw new Error(`Failed to send metrics to Datadog: ${error}`);
+    }
 };
 
-const getProjectedCosts = async (datadogConfiguration: datadog.client.Configuration) => {
+const getProjectedCosts = async (datadogConfiguration: datadog.client.Configuration): number | undefined => {
     const apiInstance = new datadog.v2.UsageMeteringApi(datadogConfiguration);
 
     try {
         const response = await apiInstance.getProjectedCost();
-        logger('Projected costs retrieved', { response });
-        const totalCost = response.data[0].attributes.projectedTotalCost;
+        const totalCost = response.data?.[0]?.attributes?.projectedTotalCost;
         return totalCost;
     } catch (error) {
         logger('Error retrieving projected costs', { error });
@@ -228,25 +229,36 @@ export const handler = async () => {
     const datadogApiKey = await getSecretValue(datadogApiKeySecretArn, datadogApiKeySecretPath);
     const datadogAppKey = await getSecretValue(datadogAppKeySecretArn, datadogAppKeySecretPath);
 
+    logger('Datadog API key and app key retrieved', {
+        datadogApiKey,
+        datadogAppKey,
+        datadogSite,
+    });
+
     const datadogConfiguration = getDatadogApiConfiguration(datadogApiKey, datadogAppKey, datadogSite);
 
     await validateApiKey(datadogConfiguration);
 
     const date = new Date();
 
+    const metrics = [];
+
     const estimatedCosts = await getEstimatedCosts(datadogConfiguration, date);
     logger('Estimated costs', { estimatedCosts });
-    const projectedCosts = await getProjectedCosts(datadogConfiguration);
-    logger('Projected costs', { projectedCosts });
-
-    await sendMetricsToDatadog(datadogConfiguration, date, [
-        {
+    if (estimatedCosts !== undefined) {
+        metrics.push({
             metricName: estimatedCostsMetricName,
             value: estimatedCosts,
-        },
-        {
+        });
+    }
+    const projectedCosts = await getProjectedCosts(datadogConfiguration);
+    logger('Projected costs', { projectedCosts });
+    if (projectedCosts !== undefined) {
+        metrics.push({
             metricName: projectedCostsMetricName,
             value: projectedCosts,
-        },
-    ]);
+        });
+    }
+
+    await sendMetricsToDatadog(datadogConfiguration, date, metrics);
 };
