@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [1.0.4](https://github.com/isotoma/datadog-costs-metrics-sender-cdk/compare/1.0.3...1.0.4)
+
+- Tidy logs [`#9`](https://github.com/isotoma/datadog-costs-metrics-sender-cdk/pull/9)
+- Bump form-data from 4.0.2 to 4.0.4 [`#8`](https://github.com/isotoma/datadog-costs-metrics-sender-cdk/pull/8)
+
 #### [1.0.3](https://github.com/isotoma/datadog-costs-metrics-sender-cdk/compare/1.0.2...1.0.3)
+
+> 4 June 2025
 
 - Fix for Datadog site selection [`#7`](https://github.com/isotoma/datadog-costs-metrics-sender-cdk/pull/7)
 - Fix for cost data being unavailable [`#6`](https://github.com/isotoma/datadog-costs-metrics-sender-cdk/pull/6)
