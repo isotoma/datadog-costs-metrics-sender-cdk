@@ -80,7 +80,6 @@ const getSecretValue = async (secretArn: string, secretPath: string | undefined)
 
 const getDatadogApiConfiguration = (apiKey: string, appKey: string, site: string) => {
     logger('Creating Datadog API configuration', {
-        apiKey,
         site,
     });
     const configuration = datadog.client.createConfiguration({
@@ -230,8 +229,6 @@ export const handler = async () => {
     const datadogAppKey = await getSecretValue(datadogAppKeySecretArn, datadogAppKeySecretPath);
 
     logger('Datadog API key and app key retrieved', {
-        datadogApiKey,
-        datadogAppKey,
         datadogSite,
     });
 
